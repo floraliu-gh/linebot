@@ -16,7 +16,7 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA
 
 
 def get_images(keyword):
-    ""從 Google Sheet 取得符合關鍵字的圖片與集數資料""
+    """從 Google Sheet 取得符合關鍵字的圖片與集數資料"""
     try:
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
