@@ -11,15 +11,13 @@ line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
 
 # Google Sheet CSV 連結，確保分享設定是「任何有連結的人都可以檢視」
-# 並且網址類似：https://docs.google.com/spreadsheets/d/你的ID/export?format=csv
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA48KPBN91yTMRnuVMHktQ/export?format=csv"
 
 
-# 暫存上一輪搜尋結果 (單用戶測試用)
-last_results = []
+# 用 dict 來存不同使用者的搜尋結果
+user_cache = {}  # { user_id: [ {no, keyword, url, episode}, ... ] }
 
 def get_images(keyword):
-    """模糊搜尋：輸入的每個字元都必須出現在關鍵字欄位，不要求順序與連續"""
     try:
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
@@ -35,14 +33,14 @@ def get_images(keyword):
             # 每個字元都必須存在於 kw
             if all(ch in kw for ch in keyword_clean):
                 results.append({
-                    "no": row["編號"],
+                    "no": row["圖片編號"],
                     "keyword": row["關鍵字"],
-                    "url": row["圖片網址"],
+                    "url": row["image_url"],
                     "episode": row["集數"]
                 })
         return results
-    except Exception as e:
-        print("Error fetching or parsing CSV:", e)
+    except Exception:
+        traceback.print_exc()
         return []
 
 @app.route("/callback", methods=['POST'])
@@ -57,50 +55,47 @@ def callback():
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text(event):
-    global last_results
+    user_id = event.source.user_id
     user_input = event.message.text.strip()
 
-    # 處理「輸入純數字」的情況
+    # 從快取讀取使用者的前次結果
+    last_results = user_cache.get(user_id, [])
+
+    # 輸入純數字 -> 查詢上一輪的結果
     if user_input.isdigit() and last_results:
-        # 嘗試將此純數字當作圖片編號
         selected = [r for r in last_results if r["no"] == user_input]
         if selected:
-            # 找到對應的圖片，回覆圖片與集數
             data = selected[0]
-            img_url = data["url"]
-            episode = data["episode"]
             msgs = [
                 ImageSendMessage(
-                    original_content_url=img_url,
-                    preview_image_url=img_url
+                    original_content_url=data["url"],
+                    preview_image_url=data["url"]
                 ),
                 TextSendMessage(
-                    text=f"圖片編號：{data['no']}\n關鍵字：{data['keyword']}\n出處集數：{episode}"
+                    text=f"圖片編號：{data['no']}\n關鍵字：{data['keyword']}\n出處集數：{data['episode']}"
                 )
             ]
             line_bot_api.reply_message(event.reply_token, msgs)
             return
-        # 沒有匹配到編號 -> 直接當作關鍵字進行搜尋
 
     # 關鍵字搜尋
     results = get_images(user_input)
     if results:
-        last_results = results
-        # 回傳清單文字
-        lines = ["請輸入編號以查看圖片："]
-        for data in results[:10]:  # 最多顯示 10 筆
+        # 記住這個使用者最新的搜尋結果
+        user_cache[user_id] = results
+        lines = ["請輸入圖片編號以查看圖片："]
+        for data in results[:10]:
             lines.append(f"{data['no']}. {data['keyword']}")
-        reply_text = "\n".join(lines)
-
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text=reply_text)
+            TextSendMessage(text="\n".join(lines))
         )
     else:
-        last_results = []
+        # 清掉快取
+        user_cache[user_id] = []
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="沒有這張圖片餒！")
+            TextSendMessage(text="沒有這個梗圖餒！")
         )
 
 if __name__ == "__main__":
