@@ -23,7 +23,7 @@ def get_images(keyword):
         f = StringIO(res.text)
         reader = csv.DictReader(f)
         # 篩選 keyword 欄位值等於使用者輸入（可做忽略大小寫）
-        urls = [row["image_url"] for row in reader if row["keyword"].strip().lower() == keyword.lower()]
+        urls = [row["圖片網址"] for row in reader if row["關鍵字"].strip().lower() == keyword.lower()]
         return urls
     except Exception as e:
         print("Error fetching or parsing CSV:", e)
