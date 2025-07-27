@@ -33,7 +33,7 @@ def get_images(keyword):
             # 每個字元都必須存在於 kw
             if all(ch in kw for ch in keyword_clean):
                 results.append({
-                    "no": row["圖片編號"],
+                    "no": row["編號"],
                     "keyword": row["關鍵字"],
                     "url": row["圖片網址"],
                     "episode": row["集數"]
