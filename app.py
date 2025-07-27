@@ -72,7 +72,7 @@ def handle_text(event):
                     preview_image_url=data["url"]
                 ),
                 TextSendMessage(
-                    text=f"出處集數：{data['episode']}"
+                    text=f"集數資訊：{data['episode']}"
                 )
             ]
             line_bot_api.reply_message(event.reply_token, msgs)
