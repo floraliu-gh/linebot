@@ -35,7 +35,7 @@ def get_images(keyword):
                 results.append({
                     "no": row["圖片編號"],
                     "keyword": row["關鍵字"],
-                    "url": row["image_url"],
+                    "url": row["圖片網址"],
                     "episode": row["集數"]
                 })
         return results
