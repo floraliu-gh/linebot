@@ -81,7 +81,7 @@ def handle_text(event):
         # 沒找到，直接回覆
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="沒有這個梗圖餒！")
+            TextSendMessage(text="沒有這張圖片餒！")
         )
         return  # 提前結束
 
