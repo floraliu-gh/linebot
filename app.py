@@ -61,11 +61,39 @@ def handle_text(event):
     # 從快取讀取使用者的前次結果
     last_results = user_cache.get(user_id, [])
 
-    # 輸入純數字 -> 查詢上一輪的結果
-    if user_input.isdigit() and last_results:
-        selected = [r for r in last_results if r["no"] == user_input]
-        if selected:
-            data = selected[0]
+    # 如果輸入純數字，完全只看上一輪結果
+    if user_input.isdigit():
+        if last_results:
+            selected = [r for r in last_results if r["no"] == user_input]
+            if selected:
+                data = selected[0]
+                msgs = [
+                    ImageSendMessage(
+                        original_content_url=data["url"],
+                        preview_image_url=data["url"]
+                    ),
+                    TextSendMessage(
+                        text=f"集數資訊：{data['episode']}"
+                    )
+                ]
+                line_bot_api.reply_message(event.reply_token, msgs)
+                return
+        # 沒找到，直接回覆
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text="沒有這個梗圖餒！")
+        )
+        return  # 提前結束
+
+    # 文字關鍵字搜尋
+    results = get_images(user_input)
+    if results:
+        # 記住這個使用者最新的搜尋結果
+        user_cache[user_id] = results
+
+        # 如果只有一筆結果，直接回圖
+        if len(results) == 1:
+            data = results[0]
             msgs = [
                 ImageSendMessage(
                     original_content_url=data["url"],
@@ -78,11 +106,7 @@ def handle_text(event):
             line_bot_api.reply_message(event.reply_token, msgs)
             return
 
-    # 關鍵字搜尋
-    results = get_images(user_input)
-    if results:
-        # 記住這個使用者最新的搜尋結果
-        user_cache[user_id] = results
+        # 多筆結果才回清單
         lines = ["請輸入圖片編號以查看圖片："]
         for data in results[:10]:
             lines.append(f"{data['no']}. {data['keyword']}")
@@ -97,6 +121,7 @@ def handle_text(event):
             event.reply_token,
             TextSendMessage(text="沒有這個梗圖餒！")
         )
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
