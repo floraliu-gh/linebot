@@ -12,7 +12,8 @@ handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
 
 # Google Sheet CSV 連結，確保分享設定是「任何有連結的人都可以檢視」
 # 並且網址類似：https://docs.google.com/spreadsheets/d/你的ID/export?format=csv
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA48KPBN91yTMRnuVMHktQ/edit?usp=sharing"
+SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA48KPBN91yTMRnuVMHktQ/export?format=csv
+"
 
 def get_images(keyword):
     try:
