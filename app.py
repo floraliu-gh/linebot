@@ -53,7 +53,7 @@ def get_images(keyword):
                     "keyword": row["關鍵字"],
                     "url": row["圖片網址"],
                     "episode": row["集數資訊"],
-                    "audio": row.get("audio_url", "").strip()
+                    "audio": row.get("音檔", "").strip()
                 })
         return results
     except Exception:
@@ -154,7 +154,7 @@ def handle_text(event):
         user_cache[user_id] = []
         line_bot_api.reply_message(
             event.reply_token,
-            TextSendMessage(text="沒有這個梗圖餒！")
+            TextSendMessage(text="沒有這張圖片餒！")
         )
 
 if __name__ == "__main__":
