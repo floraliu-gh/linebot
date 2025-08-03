@@ -1,23 +1,39 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import MessageEvent, TextMessage, TextSendMessage, ImageSendMessage
-import os, requests, csv, random
-from io import StringIO
+from linebot.models import (
+    MessageEvent, TextMessage, TextSendMessage,
+    ImageSendMessage, AudioSendMessage
+)
+import os, requests, csv, traceback
+from io import StringIO, BytesIO
+from mutagen import File as MutagenFile
 
 app = Flask(__name__)
 
 line_bot_api = LineBotApi(os.getenv("LINE_CHANNEL_ACCESS_TOKEN"))
 handler = WebhookHandler(os.getenv("LINE_CHANNEL_SECRET"))
 
-# Google Sheet CSV 連結，確保分享設定是「任何有連結的人都可以檢視」
+# Google Sheet CSV 連結
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA48KPBN91yTMRnuVMHktQ/export?format=csv"
 
-
 # 用 dict 來存不同使用者的搜尋結果
-user_cache = {}  # { user_id: [ {no, keyword, url, episode}, ... ] }
+user_cache = {}  # { user_id: [ {no, keyword, url, episode, audio}, ... ] }
+
+def get_audio_duration_ms(url):
+    """下載音檔並回傳長度 (毫秒)，下載失敗回傳 3000"""
+    try:
+        r = requests.get(url, timeout=10)
+        r.raise_for_status()
+        audio = MutagenFile(BytesIO(r.content))
+        if audio and audio.info:
+            return int(audio.info.length * 1000)
+    except Exception as e:
+        print(f"無法取得音檔長度: {e}")
+    return 3000
 
 def get_images(keyword):
+    """模糊搜尋：輸入的每個字元都必須存在於 '關鍵字' 欄位"""
     try:
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
@@ -36,7 +52,8 @@ def get_images(keyword):
                     "no": row["編號"],
                     "keyword": row["關鍵字"],
                     "url": row["圖片網址"],
-                    "episode": row["集數資訊"]
+                    "episode": row["集數資訊"],
+                    "audio": row.get("audio_url", "").strip()
                 })
         return results
     except Exception:
@@ -61,7 +78,7 @@ def handle_text(event):
     # 從快取讀取使用者的前次結果
     last_results = user_cache.get(user_id, [])
 
-    # 如果輸入純數字，完全只看上一輪結果
+    # 如果輸入純數字 -> 嘗試用圖片編號顯示上一輪的結果
     if user_input.isdigit():
         if last_results:
             selected = [r for r in last_results if r["no"] == user_input]
@@ -76,22 +93,32 @@ def handle_text(event):
                         text=f"集數資訊：{data['episode']}"
                     )
                 ]
+                # 如果該筆資料有 audio_url，就加語音
+                if data.get("audio"):
+                    duration = get_audio_duration_ms(data["audio"])
+                    msgs.append(
+                        AudioSendMessage(
+                            original_content_url=data["audio"],
+                            duration=duration
+                        )
+                    )
+
                 line_bot_api.reply_message(event.reply_token, msgs)
                 return
-        # 沒找到，直接回覆
+        # 沒找到就回覆
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="沒有這張圖片餒！")
         )
         return  # 提前結束
 
-    # 文字關鍵字搜尋
+    # 關鍵字搜尋
     results = get_images(user_input)
     if results:
         # 記住這個使用者最新的搜尋結果
         user_cache[user_id] = results
 
-        # 如果只有一筆結果，直接回圖
+        # 如果只有一筆結果，直接回覆圖片
         if len(results) == 1:
             data = results[0]
             msgs = [
@@ -103,10 +130,18 @@ def handle_text(event):
                     text=f"集數資訊：{data['episode']}"
                 )
             ]
+            if data.get("audio"):
+                duration = get_audio_duration_ms(data["audio"])
+                msgs.append(
+                    AudioSendMessage(
+                        original_content_url=data["audio"],
+                        duration=duration
+                    )
+                )
             line_bot_api.reply_message(event.reply_token, msgs)
             return
 
-        # 多筆結果才回清單
+        # 多筆結果 -> 回清單
         lines = ["請輸入圖片編號以查看圖片："]
         for data in results[:10]:
             lines.append(f"{data['no']}. {data['keyword']}")
@@ -115,15 +150,13 @@ def handle_text(event):
             TextSendMessage(text="\n".join(lines))
         )
     else:
-        # 清掉快取
+        # 清空快取
         user_cache[user_id] = []
         line_bot_api.reply_message(
             event.reply_token,
             TextSendMessage(text="沒有這個梗圖餒！")
         )
 
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
