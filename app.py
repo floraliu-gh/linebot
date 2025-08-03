@@ -39,7 +39,7 @@ def get_audio_duration_ms(url):
                 return int(audio.info.length * 1000)
     except Exception as e:
         print("Error calculating audio duration:", e)
-    return 5000
+    return 3000
 
 
 def get_images(keyword):
