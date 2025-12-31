@@ -53,18 +53,30 @@ def get_images(keyword):
 
         results = []
         keyword_clean = keyword.replace(" ", "").lower()
+        if not keyword_clean:
+            return []
+
+        use_artist = keyword_clean.startswith("/")
+        if use_artist:
+            keyword_clean = keyword_clean[1:]  # 拿掉 /
 
         for row in reader:
-            kw = row["關鍵字"].strip().lower()
-            # 模糊搜尋：keyword_clean 的每個字元都要存在於 kw
+            # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
+            if use_artist:
+                kw = row["藝人"].strip().lower()
+            else:
+                kw = row["關鍵字"].strip().lower()
+        
             if all(ch in kw for ch in keyword_clean):
                 results.append({
                     "no": row["編號"],
                     "keyword": row["關鍵字"],
                     "url": row["圖片網址"],
                     "episode": row["集數資訊"],
-                    "audio": row.get("音檔", "").strip()
-                 })
+                    "audio": row.get("音檔", "").strip(),
+                    "artist":row["藝人"]
+                    })
+        
         return results
     except Exception:
         traceback.print_exc()
