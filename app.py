@@ -56,7 +56,7 @@ def get_images(keyword):
         if not keyword_clean:
             return []
 
-        use_artist = keyword_clean.startswith("/")  or keyword_clean.startswith("∕") or keyword_clean.startswith("／")
+        use_artist = keyword_clean.startswith("/")  or keyword_clean.startswith("∕") 
         if use_artist:
             keyword_clean = keyword_clean[1:]  # 拿掉 /
 
