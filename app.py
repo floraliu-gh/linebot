@@ -60,20 +60,6 @@ def get_images(keyword):
         random_pick = keyword_clean.startswith("/抽")
         if use_artist:
             keyword_clean = keyword_clean[1:]  # 拿掉 /
-        if random_pick:
-            rows = list(reader)
-            if not rows:
-                return []
-
-            picked = random.choice(rows)
-            return [{
-                "no": picked["編號"],
-                "keyword": picked["關鍵字"],
-                "url": picked["圖片網址"],
-                "episode": picked["集數資訊"],
-                "audio": picked.get("音檔", "").strip(),
-                "artist": picked["藝人"]
-            }]
 
         for row in reader:
             # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
