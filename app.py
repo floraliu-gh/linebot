@@ -136,6 +136,7 @@ def handle_text(event):
 
     # 文字關鍵字搜尋
     results = get_images(user_input)
+    print(f"DEBUG: 搜尋 {user_input} 找到了 {len(results)} 筆資料")
     if results:
         user_cache[user_id] = results
 
