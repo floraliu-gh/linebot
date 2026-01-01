@@ -57,7 +57,7 @@ def get_images(keyword):
             return []
 
         use_artist = keyword_clean.startswith("/")  or keyword_clean.startswith("∕") 
-        random_pick = keyword_clean.startswith("抽")
+        random_pick = keyword_clean.startswith("/抽")
         if use_artist:
             keyword_clean = keyword_clean[1:]  # 拿掉 /
         if random_pick:
