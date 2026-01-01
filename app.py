@@ -164,7 +164,7 @@ def handle_text(event):
 
         # 多筆結果只回清單
         lines = ["請輸入圖片編號以查看圖片："]
-        for data in results[:10]:
+        for data in results[]:
             lines.append(f"{data['no']}. {data['keyword']}")
         line_bot_api.reply_message(
             event.reply_token,
