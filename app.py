@@ -64,7 +64,7 @@ def get_images(keyword):
         for row in reader:
             # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
             if use_artist:
-                kw = row["藝人"].strip().lower()
+                kw = row["藝人"].replace(" ", "").lower()
             else:
                 kw = row["關鍵字"].strip().lower()
         
