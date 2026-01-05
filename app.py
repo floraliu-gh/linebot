@@ -47,7 +47,7 @@ def get_images(keyword):
     try:
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
-        decoded_content = res.content.decode = "utf-8-sig"
+        decoded_content = res.content.decode("utf-8-sig")
         f = StringIO(decoded_content)
         reader = csv.DictReader(f)
 
