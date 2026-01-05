@@ -47,22 +47,24 @@ def get_images(keyword):
     try:
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
-        res.encoding = "utf-8"
-        f = StringIO(res.text)
+        decoded_content = res.content.decode = "utf-8-sig"
+        f = StringIO(decoded_content)
         reader = csv.DictReader(f)
 
         results = []
+        rows = list(reader)
+        
         keyword_clean = keyword.replace(" ", "").lower()
+
         if not keyword_clean:
             return []
 
-        use_artist = keyword_clean.startswith("/")  or keyword_clean.startswith("∕") 
+        use_artist = keyword_clean.startswith("/") or keyword_clean.startswith("∕") or keyword_clean.startswith("／")
         random_pick = keyword_clean.startswith("🎲")
-        
+
         if use_artist:
             keyword_clean = keyword_clean[1:]  # 拿掉 /
         if random_pick:
-            rows = list(reader)
             if not rows:
                 return []
 
@@ -73,15 +75,16 @@ def get_images(keyword):
                 "url": picked["圖片網址"],
                 "episode": picked["集數資訊"],
                 "audio": picked.get("音檔", "").strip(),
-                "artist": picked["藝人"]
+                
             }]
-        
-        for row in reader:
+        for row in rows:
+            
             # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
             if use_artist:
-                kw = row["藝人"].replace(" ", "").lower()
+                kw = row.get("藝人","").strip().lower()
+
             else:
-                kw = row["關鍵字"].strip().lower()
+                kw = row.get("關鍵字","").strip().lower()
         
             if all(ch in kw for ch in keyword_clean):
                 results.append({
@@ -92,7 +95,7 @@ def get_images(keyword):
                     "audio": row.get("音檔", "").strip(),
                     "artist":row["藝人"]
                     })
-        
+
         return results
     except Exception:
         traceback.print_exc()
