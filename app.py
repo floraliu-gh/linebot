@@ -8,6 +8,7 @@ from linebot.models import (
     ImageSendMessage,
     AudioSendMessage,
 )
+import random
 import os, requests, csv, traceback
 from io import StringIO
 import tempfile
@@ -50,64 +51,39 @@ def get_images(keyword):
         decoded_content = res.content.decode("utf-8-sig")
         f = StringIO(decoded_content)
         reader = csv.DictReader(f)
-        
-        # 轉成 list 以便多次使用
+
+        results = []
         rows = list(reader)
         
         keyword_clean = keyword.replace(" ", "").lower()
+
         if not keyword_clean:
             return []
 
         use_artist = keyword_clean.startswith("/") or keyword_clean.startswith("∕") or keyword_clean.startswith("／")
-        is_random_keyword = keyword_clean.startswith("🎲") or "隨機" in keyword_clean
+        random_pick = keyword_clean.startswith("🎲")
 
         if use_artist:
-            keyword_clean = keyword_clean[1:]
-
-        # --- 隨機功能邏輯：限定 200 以內 ---
-        if is_random_keyword:
+            keyword_clean = keyword_clean[1:]  # 拿掉 /
+        if random_pick:
             if not rows:
                 return []
-            
-            # 1. 篩選出「有圖片」且「編號在 200 以內」的資料
-            candidates = []
-            for row in rows:
-                # 檢查網址是否存在
-                if not (row.get("圖片網址") and row["圖片網址"].strip()):
-                    continue
-                
-                # 檢查編號是否在 1~200 之間
-                try:
-                    no = int(row["編號"])
-                    if 1 <= no <= 200:
-                        candidates.append(row)
-                except ValueError:
-                    # 如果編號不是數字 (例如 "S1")，就跳過
-                    continue
-            
-            # 2. 如果篩選後沒資料，就回傳空
-            if not candidates:
-                print("範圍內沒有可用的圖片資料")
-                return []
 
-            # 3. 從符合條件的清單中隨機抽一個
-            picked = random.choice(candidates)
-            
+            picked = random.choice(rows)
             return [{
                 "no": picked["編號"],
                 "keyword": picked["關鍵字"],
                 "url": picked["圖片網址"],
                 "episode": picked["集數資訊"],
                 "audio": picked.get("音檔", "").strip(),
-                "artist": picked.get("藝人", "")
+                
             }]
-        # ----------------------------------
-
-        # 一般關鍵字搜尋邏輯 (保持不變)
-        results = []
         for row in rows:
+            
+            # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
             if use_artist:
                 kw = row.get("藝人","").strip().lower()
+
             else:
                 kw = row.get("關鍵字","").strip().lower()
         
@@ -118,8 +94,8 @@ def get_images(keyword):
                     "url": row["圖片網址"],
                     "episode": row["集數資訊"],
                     "audio": row.get("音檔", "").strip(),
-                    "artist": row.get("藝人", "")
-                })
+                    "artist":row["藝人"]
+                    })
 
         return results
     except Exception:
