@@ -46,6 +46,7 @@ def get_audio_duration_ms(url):
 def get_images(keyword):
     """搜尋 Google Sheet，回傳符合條件的多筆資料"""
     try:
+        # 假設 SHEET_CSV_URL 已在程式其他地方定義
         res = requests.get(SHEET_CSV_URL)
         res.raise_for_status()
         decoded_content = res.content.decode("utf-8-sig")
@@ -55,49 +56,60 @@ def get_images(keyword):
         results = []
         rows = list(reader)
         
+        # 清理關鍵字：移除空白並轉小寫
         keyword_clean = keyword.replace(" ", "").lower()
 
         if not keyword_clean:
             return []
 
+        # 判斷是否為隨機指令
+        random_pick = keyword_clean in ["隨機", "🎲", "random"]
         use_artist = keyword_clean.startswith("/") or keyword_clean.startswith("∕") or keyword_clean.startswith("／")
-        random_pick = keyword_clean.startswith("🎲")
 
-        if use_artist:
-            keyword_clean = keyword_clean[1:]  # 拿掉 /
         if random_pick:
-            if not rows:
-                return []
+            candidates = []
+            for row in rows:
+                url = row.get("圖片網址", "").strip()
 
-            picked = random.choice(rows)
-            return [{
-                "no": picked["編號"],
-                "keyword": picked["關鍵字"],
-                "url": picked["圖片網址"],
-                "episode": picked["集數資訊"],
-                "audio": picked.get("音檔", "").strip(),
-                
-            }]
-        for row in rows:
+                if url:
+                    candidates.append({
+                        "no": row["編號"],
+                        "keyword": row["關鍵字"],
+                        "url": url,
+                        "episode": row["集數資訊"],
+                        "audio": row.get("音檔", "").strip(),
+                        "artist": row["藝人"]
+                    })
             
-            # 第一個字是 '/' 就搜尋藝人，否則搜尋關鍵字
-            if use_artist:
-                kw = row.get("藝人","").strip().lower()
+            # 如果有候選名單，隨機回傳一筆；否則回傳空列表
+            if candidates:
+                return [random.choice(candidates)]
+            return []
 
-            else:
-                kw = row.get("關鍵字","").strip().lower()
+        # 如果是藝人搜尋，移除開頭的符號
+        if use_artist:
+            keyword_clean = keyword_clean[1:]
         
-            if all(ch in kw for ch in keyword_clean):
+        for row in rows:
+            # 根據模式選擇要比對的欄位
+            if use_artist:
+                target_text = row.get("藝人", "").strip().lower()
+            else:
+                target_text = row.get("關鍵字", "").strip().lower()
+            
+            # 模糊搜尋邏輯 (每個字都要包含在目標字串中)
+            if all(ch in target_text for ch in keyword_clean):
                 results.append({
                     "no": row["編號"],
                     "keyword": row["關鍵字"],
                     "url": row["圖片網址"],
                     "episode": row["集數資訊"],
                     "audio": row.get("音檔", "").strip(),
-                    "artist":row["藝人"]
-                    })
+                    "artist": row["藝人"]
+                })
 
         return results
+        
     except Exception:
         traceback.print_exc()
         return []
