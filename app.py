@@ -116,6 +116,9 @@ def callback():
         abort(400)
     return 'OK'
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    return "OK", 200
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_text(event):
