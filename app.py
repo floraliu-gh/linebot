@@ -31,7 +31,7 @@ SHEET_TTL = 300  # 5 分鐘
 AUDIO_DURATION_CACHE = {}
 
 user_cache = OrderedDict()
-MAX_USERS = 1000
+MAX_USERS = 800
 # ===========================
 
 
