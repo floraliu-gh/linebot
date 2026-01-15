@@ -208,7 +208,7 @@ def handle_text(event):
         # 用來計算當前累積了多少字，這裡設定 4000 (上限是 5000)
         MAX_CHARS = 4000 
 
-        for data in results:  # 這裡拿掉了 [:50]，會跑所有結果
+        for data in results:
             line = f"{data['no']}. {data['keyword']}\n"
             
             # 如果加上這一行會超過單一訊息限制，就先把目前的存成一個訊息框
