@@ -26,7 +26,7 @@ SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1FoDBb7Vk8OwoaIrAD31y5hA
 # ========= 快取設定 =========
 SHEET_CACHE = []
 SHEET_LAST_FETCH = 0
-SHEET_TTL = 300  # 5 分鐘
+SHEET_TTL = 30  # 5 分鐘
 
 AUDIO_DURATION_CACHE = {}
 
